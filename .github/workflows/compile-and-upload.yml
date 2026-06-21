@@ -1,0 +1,40 @@
+name: Compile CV and Upload to Google Drive
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-xetex texlive-latex-extra texlive-fonts-recommended
+
+      - name: Compile PDF
+        run: |
+          cd cv_khalil_ben_romdhane/junior_developer_template
+          xelatex -interaction=nonstopmode main.tex
+          xelatex -interaction=nonstopmode main.tex
+
+      - name: Upload PDF to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: cv_khalil_ben_romdhane/junior_developer_template/main.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to Google Drive
+        uses: adityak74/google-drive-upload-git-action@main
+        with:
+          credentials: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
+          parent_folder_id: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          file_name: 'CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf'
+          file_path: 'cv_khalil_ben_romdhane/junior_developer_template/main.pdf'
+          overwrite: true
