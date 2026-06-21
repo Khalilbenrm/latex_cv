@@ -131,6 +131,10 @@
         #2 & #4 \\
     \end{tabular*}
 }
+\newcommand{\Profil}[1]{
+    \noindent
+    #1\\[10pt]
+}
 
 \newcommand{\SkillItem}[2]{\item \textbf{#1}{#2}}
 
