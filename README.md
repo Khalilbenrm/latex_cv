@@ -4,16 +4,16 @@ Collection de templates de CV/résumé en LaTeX.
 
 ## Contenu
 
-- `cv_khalil_ben_romdhane/` - Mon CV personnel
+- `cv_khalil_ben_romdhane/` - Dossier parent
 - `general_template/` - Template générique
-- `junior_developer_template/` - Template pour développeurs junior
+- `junior_developer_template/` - Template pour développeurs junior (mon cv)
 - `professional_developer_template/` - Template professionnel
 
 ## Comment compiler
 
 ```bash
-cd junior_developer_template
-pdflatex main.tex
+cd cv_khalil_ben_romdhane/junior_developer_template
+xelatex main.tex
 ```
 
 ## Prérequis
