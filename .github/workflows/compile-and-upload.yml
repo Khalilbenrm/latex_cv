@@ -1,9 +1,8 @@
-name: Compile CV and Upload to Google Drive
+name: Compile CV and Upload
 
 on:
   release:
-    types:
-      - published
+    types: [published]
 
 permissions:
   contents: write
@@ -13,82 +12,65 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # -----------------------------
-      # Checkout repo
-      # -----------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # -----------------------------
-      # Cache LaTeX (important speed gain)
-      # -----------------------------
-      - name: Cache TeX Live
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.texlive
-            /usr/local/texlive
-          key: texlive-${{ runner.os }}-${{ hashFiles('**/*.tex') }}
-
-      # -----------------------------
-      # Install LaTeX (minimal but complete)
-      # -----------------------------
       - name: Install LaTeX
         run: |
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            texlive-xetex \
-            texlive-latex-recommended \
-            texlive-fonts-recommended \
-            texlive-fonts-extra \
-            latexmk
+            texlive-xetex texlive-latex-recommended texlive-fonts-recommended texlive-fonts-extra latexmk
 
-      # -----------------------------
-      # Compile CV
-      # -----------------------------
       - name: Compile PDF
         working-directory: cv_khalil_ben_romdhane/junior_developer_template
-        run: |
-          latexmk -xelatex -interaction=nonstopmode main.tex
+        run: latexmk -xelatex -interaction=nonstopmode main.tex
 
-      # -----------------------------
-      # Rename output file
-      # -----------------------------
       - name: Rename PDF
         run: |
           mv cv_khalil_ben_romdhane/junior_developer_template/main.pdf \
              CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
 
-      # -----------------------------
-      # Debug (optional but useful)
-      # -----------------------------
-      - name: List files
-        run: ls -lah
-
-      # -----------------------------
-      # Upload to GitHub Release
-      # -----------------------------
-      - name: Upload PDF to GitHub Release
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
-      - name: Check Google Drive secrets
-        run: |
-              echo "Credentials length: ${#CREDS}"
-              echo "Folder ID: '$FOLDER_ID'"
-              if [ -z "$CREDS" ]; then echo "❌ CREDENTIALS VIDE!"; fi
-              if [ -z "$FOLDER_ID" ]; then echo "❌ FOLDER_ID VIDE!"; fi
-        env:
-          CREDS: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
-          FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
 
-      # -----------------------------
-      # Upload to Google Drive
-      # -----------------------------
+      - name: Install Python deps
+        run: |
+          pip install --upgrade google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
+
       - name: Upload to Google Drive
-        uses: adityak74/google-drive-upload-git-action@main
-        with:
-          credentials: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
-          folderId: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-          filename: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
-          overwrite: false
+        run: |
+          python - <<EOF
+          from google.oauth2.credentials import Credentials
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaFileUpload
+          import os
+
+          creds = Credentials(
+              None,
+              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+              token_uri="https://oauth2.googleapis.com/token",
+              client_id=os.environ["GOOGLE_CLIENT_ID"],
+              client_secret=os.environ["GOOGLE_CLIENT_SECRET"]
+          )
+
+          service = build("drive", "v3", credentials=creds)
+
+          filename = f"CV_BenRomdhane_Khalil_{os.environ['TAG']}.pdf"
+
+          media = MediaFileUpload(filename, mimetype="application/pdf")
+
+          file = service.files().create(
+              body={"name": filename},
+              media_body=media,
+              fields="id"
+          ).execute()
+
+          print("Uploaded:", file.get("id"))
+          EOF
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
