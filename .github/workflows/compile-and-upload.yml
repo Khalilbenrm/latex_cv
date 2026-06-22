@@ -2,42 +2,49 @@ name: Compile CV and Upload to Google Drive
 
 on:
   release:
-    types: [published]
+    types:
+      - published
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Install LaTeX
         run: |
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            texlive-full \
+            texlive-xetex \
             texlive-fonts-extra \
             texlive-latex-extra
 
       - name: Compile PDF
+        working-directory: cv_khalil_ben_romdhane/junior_developer_template
         run: |
-          cd cv_khalil_ben_romdhane/junior_developer_template
           xelatex -interaction=nonstopmode main.tex
           xelatex -interaction=nonstopmode main.tex
 
-      - name: Upload PDF to Release
-        uses: softprops/action-gh-release@v1
+      - name: Rename PDF
+        run: |
+          cp \
+            cv_khalil_ben_romdhane/junior_developer_template/main.pdf \
+            CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
+
+      - name: Upload PDF to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          files: cv_khalil_ben_romdhane/junior_developer_template/main.pdf
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
 
-      - name: Upload to Google Drive
+      - name: Upload PDF to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
           credentials: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
           parent_folder_id: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-          file_name: 'CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf'
-          file_path: 'cv_khalil_ben_romdhane/junior_developer_template/main.pdf'
+          file_path: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
           overwrite: true
