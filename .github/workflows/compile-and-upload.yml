@@ -16,24 +16,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Cache LaTeX packages
+      - name: Cache TeX Live
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.texlive
+            /usr/local/texlive
+          key: texlive-${{ runner.os }}-v1
+
       - name: Install LaTeX
         run: |
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             texlive-xetex \
-            texlive-fonts-extra \
-            texlive-latex-extra
+            texlive-latex-recommended \
+            texlive-fonts-recommended \
+            latexmk
 
       - name: Compile PDF
         working-directory: cv_khalil_ben_romdhane/junior_developer_template
         run: |
-          xelatex -interaction=nonstopmode main.tex
-          xelatex -interaction=nonstopmode main.tex
+          latexmk -xelatex -interaction=nonstopmode main.tex
 
-      - name: Rename PDF
+      - name: Move PDF to root
         run: |
-          cp cv_khalil_ben_romdhane/junior_developer_template/main.pdf \
+          mv cv_khalil_ben_romdhane/junior_developer_template/main.pdf \
              CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
+
+      - name: Debug files
+        run: ls -lah
 
       - name: Upload PDF to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -45,5 +57,5 @@ jobs:
         with:
           credentials: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
           folderId: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-          filename: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
+          name: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
           overwrite: true
