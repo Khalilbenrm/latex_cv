@@ -1,4 +1,4 @@
-name: Compile CV and Upload
+name: Compile CV and Upload to Release
 
 on:
   release:
@@ -12,65 +12,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -----------------------------
+      # Checkout repo
+      # -----------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # -----------------------------
+      # Install LaTeX
+      # -----------------------------
       - name: Install LaTeX
         run: |
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            texlive-xetex texlive-latex-recommended texlive-fonts-recommended texlive-fonts-extra latexmk
+            texlive-xetex \
+            texlive-latex-recommended \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            latexmk
 
+      # -----------------------------
+      # Compile CV
+      # -----------------------------
       - name: Compile PDF
         working-directory: cv_khalil_ben_romdhane/junior_developer_template
-        run: latexmk -xelatex -interaction=nonstopmode main.tex
+        run: |
+          latexmk -xelatex -interaction=nonstopmode main.tex
 
+      # -----------------------------
+      # Rename PDF
+      # -----------------------------
       - name: Rename PDF
         run: |
           mv cv_khalil_ben_romdhane/junior_developer_template/main.pdf \
              CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
 
-      - name: Upload to GitHub Release
+      # -----------------------------
+      # Upload to GitHub Release
+      # -----------------------------
+      - name: Upload PDF to Release
         uses: softprops/action-gh-release@v2
         with:
           files: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
-
-      - name: Install Python deps
-        run: |
-          pip install --upgrade google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
-
-      - name: Upload to Google Drive
-        run: |
-          python - <<EOF
-          from google.oauth2.credentials import Credentials
-          from googleapiclient.discovery import build
-          from googleapiclient.http import MediaFileUpload
-          import os
-
-          creds = Credentials(
-              None,
-              refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
-              token_uri="https://oauth2.googleapis.com/token",
-              client_id=os.environ["GOOGLE_CLIENT_ID"],
-              client_secret=os.environ["GOOGLE_CLIENT_SECRET"]
-          )
-
-          service = build("drive", "v3", credentials=creds)
-
-          filename = f"CV_BenRomdhane_Khalil_{os.environ['TAG']}.pdf"
-
-          media = MediaFileUpload(filename, mimetype="application/pdf")
-
-          file = service.files().create(
-              body={"name": filename},
-              media_body=media,
-              fields="id"
-          ).execute()
-
-          print("Uploaded:", file.get("id"))
-          EOF
-        env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          TAG: ${{ github.event.release.tag_name }}
