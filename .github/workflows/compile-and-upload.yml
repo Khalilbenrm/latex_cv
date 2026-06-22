@@ -13,18 +13,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -----------------------------
+      # Checkout repo
+      # -----------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Cache LaTeX packages
+      # -----------------------------
+      # Cache LaTeX (important speed gain)
+      # -----------------------------
       - name: Cache TeX Live
         uses: actions/cache@v4
         with:
           path: |
             ~/.texlive
             /usr/local/texlive
-          key: texlive-${{ runner.os }}-v1
+          key: texlive-${{ runner.os }}-${{ hashFiles('**/*.tex') }}
 
+      # -----------------------------
+      # Install LaTeX (minimal but complete)
+      # -----------------------------
       - name: Install LaTeX
         run: |
           sudo apt-get update
@@ -32,26 +40,42 @@ jobs:
             texlive-xetex \
             texlive-latex-recommended \
             texlive-fonts-recommended \
+            texlive-fonts-extra \
             latexmk
 
+      # -----------------------------
+      # Compile CV
+      # -----------------------------
       - name: Compile PDF
         working-directory: cv_khalil_ben_romdhane/junior_developer_template
         run: |
           latexmk -xelatex -interaction=nonstopmode main.tex
 
-      - name: Move PDF to root
+      # -----------------------------
+      # Rename output file
+      # -----------------------------
+      - name: Rename PDF
         run: |
           mv cv_khalil_ben_romdhane/junior_developer_template/main.pdf \
              CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
 
-      - name: Debug files
+      # -----------------------------
+      # Debug (optional but useful)
+      # -----------------------------
+      - name: List files
         run: ls -lah
 
+      # -----------------------------
+      # Upload to GitHub Release
+      # -----------------------------
       - name: Upload PDF to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
 
+      # -----------------------------
+      # Upload to Google Drive
+      # -----------------------------
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
