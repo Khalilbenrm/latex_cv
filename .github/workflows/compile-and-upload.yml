@@ -72,6 +72,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
+      - name: Check Google Drive secrets
+        run: |
+              echo "Credentials length: ${#CREDS}"
+              echo "Folder ID: '$FOLDER_ID'"
+              if [ -z "$CREDS" ]; then echo "❌ CREDENTIALS VIDE!"; fi
+              if [ -z "$FOLDER_ID" ]; then echo "❌ FOLDER_ID VIDE!"; fi
+        env:
+          CREDS: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
+          FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
 
       # -----------------------------
       # Upload to Google Drive
