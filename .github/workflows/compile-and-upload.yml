@@ -82,4 +82,4 @@ jobs:
           credentials: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
           folderId: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           filename: CV_BenRomdhane_Khalil_${{ github.event.release.tag_name }}.pdf
-          overwrite: true
+          overwrite: false
